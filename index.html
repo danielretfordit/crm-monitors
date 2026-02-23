@@ -3,55 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Mini App</title>
-    <!-- Подключаем скрипт Telegram -->
+    <title>Multi-page Mini App</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+        :root {
+            --bg: var(--tg-theme-bg-color, #ffffff);
+            --text: var(--tg-theme-text-color, #000000);
+            --hint: var(--tg-theme-hint-color, #999999);
+            --btn: var(--tg-theme-button-color, #2481cc);
+            --btn-text: var(--tg-theme-button-text-color, #ffffff);
+        }
+
         body {
             font-family: sans-serif;
-            background-color: var(--tg-theme-bg-color); /* Используем цвета темы Telegram */
-            color: var(--tg-theme-text-color);
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
         }
+
+        .page { display: none; width: 100%; text-align: center; }
+        .active { display: block; }
+
+        .card {
+            background: rgba(0,0,0,0.05);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
         button {
-            padding: 10px 20px;
-            background-color: var(--tg-theme-button-color);
-            color: var(--tg-theme-button-text-color);
+            background-color: var(--btn);
+            color: var(--btn-text);
             border: none;
-            border-radius: 5px;
-            cursor: pointer;
+            padding: 12px 20px;
+            border-radius: 8px;
+            width: 100%;
+            font-weight: bold;
+            margin-top: 10px;
         }
+
+        .hint { color: var(--hint); font-size: 0.8em; }
     </style>
 </head>
 <body>
-    <h1>Привет, <span id="username">Пользователь</span>!</h1>
-    <p>Это твое первое Mini App.</p>
-    <button id="main-btn">Отправить данные боту</button>
+
+    <!-- Главная страница -->
+    <div id="page-home" class="page active">
+        <h1>Панель управления</h1>
+        <div class="card">
+            <p>Добро пожаловать в CRM!</p>
+            <p class="hint">Выберите раздел для работы</p>
+        </div>
+        <button onclick="navigateTo('page-monitors')">🖥 Мониторы</button>
+        <button onclick="navigateTo('page-settings')">⚙️ Настройки</button>
+    </div>
+
+    <!-- Страница Мониторов -->
+    <div id="page-monitors" class="page">
+        <h1>Мониторы</h1>
+        <div class="card">🖥 Монитор #1: <span style="color: green;">Online</span></div>
+        <div class="card">🖥 Монитор #2: <span style="color: red;">Offline</span></div>
+        <button onclick="navigateTo('page-home')">⬅ Назад</button>
+    </div>
+
+    <!-- Страница Настроек -->
+    <div id="page-settings" class="page">
+        <h1>Настройки</h1>
+        <div class="card">
+            <label>Уведомления: </label>
+            <input type="checkbox" checked>
+        </div>
+        <button onclick="sendDataToBot()">Сохранить настройки</button>
+        <button onclick="navigateTo('page-home')">⬅ Назад</button>
+    </div>
 
     <script>
-        // Инициализация Telegram Web App
         const tg = window.Telegram.WebApp;
-        tg.expand(); // Расширить на весь экран
+        tg.expand();
 
-        // Выводим имя пользователя
-        const user = tg.initDataUnsafe?.user;
-        if (user) {
-            document.getElementById('username').innerText = user.first_name;
+        // Функция навигации
+        function navigateTo(pageId) {
+            // Скрываем все страницы
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            // Показываем нужную
+            document.getElementById(pageId).classList.add('active');
+
+            // Управляем кнопкой "Назад" в самом Telegram
+            if (pageId === 'page-home') {
+                tg.BackButton.hide();
+            } else {
+                tg.BackButton.show();
+            }
         }
 
-        // Обработка нажатия кнопки
-        document.getElementById('main-btn').addEventListener('click', () => {
-            const data = {
-                message: "Привет из Mini App!",
-                time: new Date().toLocaleTimeString()
-            };
-            tg.sendData(JSON.stringify(data)); // Отправляем данные боту и закрываем приложение
+        // Слушатель нажатия системной кнопки "Назад" (вверху слева в TG)
+        tg.onEvent('backButtonClicked', () => {
+            navigateTo('page-home');
         });
+
+        // Отправка данных боту
+        function sendDataToBot() {
+            const data = { action: 'save_settings', status: 'success' };
+            tg.sendData(JSON.stringify(data));
+        }
+
+        // Автоматически настраиваем цвета основного интерфейса Telegram
+        tg.ready();
     </script>
 </body>
 </html>
